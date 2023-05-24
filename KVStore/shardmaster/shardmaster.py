@@ -4,10 +4,11 @@ from KVStore.protos.kv_store_pb2 import RedistributeRequest, ServerRequest
 from KVStore.protos.kv_store_pb2_grpc import KVStoreStub
 from KVStore.protos.kv_store_shardmaster_pb2_grpc import ShardMasterServicer
 from KVStore.protos.kv_store_shardmaster_pb2 import *
+
 # from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 logger = logging.getLogger(__name__)
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
-
+import grpc
 from multiprocessing import Manager
 
 from typing import Dict
@@ -45,25 +46,18 @@ class ShardMasterService:
 class ShardMasterSimpleService(ShardMasterService):
     def __init__(self):
         super().__init__()
-        """
-        To fill with your code
-        """
+        self.storage_service = KVStoreStub(grpc.insecure_channel("localhost:50051"))
 
     def join(self, server: str):
-        """
-        To fill with your code
-        """
+        super().join(server)
+        self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
 
     def leave(self, server: str):
-        """
-        To fill with your code
-        """
+        super().leave(server)
+        self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
 
     def query(self, key: int) -> str:
         return super().query(key)
-        """
-        To fill with your code
-        """
 
 
 class ShardMasterReplicasService(ShardMasterSimpleService):
@@ -105,14 +99,12 @@ class ShardMasterServicer(ShardMasterServicer):
         self.shard_master_service.leave(request.server)
         return google_dot_protobuf_dot_empty__pb2.Empty()
 
-
     def Query(self, request: QueryRequest, context) -> QueryResponse:
         response = self.shard_master_service.query(request.key)
         if response == "":
             return QueryResponse(server=None)
         else:
             return QueryResponse(server=response)
-
 
     def JoinReplica(self, request: JoinRequest, context) -> JoinReplicaResponse:
         """
