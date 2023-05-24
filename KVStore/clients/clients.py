@@ -15,6 +15,7 @@ def _get_return(ret: GetResponse) -> Union[str, None]:
     else:
         return None
 
+
 class SimpleClient:
     def __init__(self, kvstore_address: str):
         self.channel = grpc.insecure_channel(kvstore_address)
@@ -25,23 +26,28 @@ class SimpleClient:
         To fill with your code
         """
 
+        return _get_return(ret=self.stub.Get(GetRequest(key=key)))
 
     def l_pop(self, key: int) -> Union[str, None]:
+        return _get_return(ret=self.stub.LPop(GetRequest(key=key)))
         """
         To fill with your code
         """
 
     def r_pop(self, key: int) -> Union[str, None]:
+        return _get_return(ret=self.stub.RPop(GetRequest(key=key)))
         """
         To fill with your code
         """
 
     def put(self, key: int, value: str):
+        self.stub.Put(PutRequest(key=key, value=value))
         """
         To fill with your code
         """
 
     def append(self, key: int, value: str):
+        self.stub.Append(PutRequest(key=key, value=value))
         """
         To fill with your code
         """
@@ -64,22 +70,20 @@ class ShardClient(SimpleClient):
         """
 
     def l_pop(self, key: int) -> Union[str, None]:
+
         """
         To fill with your code
         """
-
 
     def r_pop(self, key: int) -> Union[str, None]:
         """
         To fill with your code
         """
 
-
     def put(self, key: int, value: str):
         """
         To fill with your code
         """
-
 
     def append(self, key: int, value: str):
         """
@@ -99,21 +103,17 @@ class ShardReplicaClient(ShardClient):
         To fill with your code
         """
 
-
     def r_pop(self, key: int) -> Union[str, None]:
         """
         To fill with your code
         """
-
 
     def put(self, key: int, value: str):
         """
         To fill with your code
         """
 
-
     def append(self, key: int, value: str):
         """
         To fill with your code
         """
-

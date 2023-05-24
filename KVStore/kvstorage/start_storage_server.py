@@ -11,7 +11,7 @@ from KVStore.tests.utils import wait
 logger = logging.getLogger(__name__)
 
 HOSTNAME: str = "localhost"
-
+trial: float = 0.5
 
 def _run(storage_server_port: int):
 
