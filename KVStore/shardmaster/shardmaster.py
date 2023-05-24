@@ -30,7 +30,7 @@ class ShardMasterService:
     def query(self, key: int) -> str:
         num_servers = len(self.servers)
         if num_servers == 0:
-            return ""
+            return ''
 
         shard = key % num_servers
         servers = list(self.servers.keys())
@@ -50,11 +50,11 @@ class ShardMasterSimpleService(ShardMasterService):
 
     def join(self, server: str):
         super().join(server)
-        self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
+        #self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
 
     def leave(self, server: str):
         super().leave(server)
-        self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
+        #self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
 
     def query(self, key: int) -> str:
         return super().query(key)
@@ -101,17 +101,16 @@ class ShardMasterServicer(ShardMasterServicer):
 
     def Query(self, request: QueryRequest, context) -> QueryResponse:
         response = self.shard_master_service.query(request.key)
+        toReturn: QueryResponse = QueryResponse(server=response)
         if response == "":
             return QueryResponse(server=None)
         else:
-            return QueryResponse(server=response)
+            return toReturn
 
     def JoinReplica(self, request: JoinRequest, context) -> JoinReplicaResponse:
-        """
-        To fill with your code
-        """
+        return JoinReplicaResponse(role=self.shard_master_service.join_replica(request.server))
+
 
     def QueryReplica(self, request: QueryReplicaRequest, context) -> QueryResponse:
-        """
-        To fill with your code
-        """
+        return QueryResponse(server=self.shard_master_service.query_replica(request.key, request.operation))
+

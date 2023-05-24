@@ -181,16 +181,13 @@ class KVStorageServicer(KVStoreServicer):
         """
 
     def Get(self, request: GetRequest, context) -> GetResponse:
-        response= GetResponse (value=self.storage_service.get(request.key))
+        response = GetResponse(value=self.storage_service.get(request.key))
         if response.value is None or response.value == "":
             response = GetResponse(value=None)
         else:
             response = GetResponse(value=response.value)
 
         return response
-        """
-        To fill with your code
-        """
 
     def LPop(self, request: GetRequest, context) -> GetResponse:
         response= GetResponse (value=self.storage_service.l_pop(request.key))

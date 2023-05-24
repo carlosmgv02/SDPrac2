@@ -1,7 +1,7 @@
 from typing import Union, Dict
 import grpc
 import logging
-from KVStore.protos.kv_store_pb2 import GetRequest, PutRequest, GetResponse
+from KVStore.protos.kv_store_pb2 import GetRequest, PutRequest, GetResponse, AppendRequest
 from KVStore.protos.kv_store_pb2_grpc import KVStoreStub
 from KVStore.protos.kv_store_shardmaster_pb2 import QueryRequest, QueryResponse, QueryReplicaRequest, Operation
 from KVStore.protos.kv_store_shardmaster_pb2_grpc import ShardMasterStub
@@ -56,36 +56,41 @@ class ShardClient(SimpleClient):
     def __init__(self, shard_master_address: str):
         self.channel = grpc.insecure_channel(shard_master_address)
         self.stub = ShardMasterStub(self.channel)
-        """
-        To fill with your code
-        """
+
 
     def get(self, key: int) -> Union[str, None]:
-        port: str = _get_return(ret=self.stub.Query(QueryRequest(key=key)))
-        print(port)
-        """
-        To fill with your code
-        """
+        port: QueryResponse = self.stub.Query(QueryRequest(key=key))
+        channel = grpc.insecure_channel(port.server)
+        stub = KVStoreStub(channel)
+
+        return _get_return(ret=stub.Get(GetRequest(key=key)))
+
 
     def l_pop(self, key: int) -> Union[str, None]:
+        port: QueryResponse = self.stub.Query(QueryRequest(key=key))
+        channel = grpc.insecure_channel(port.server)
+        stub = KVStoreStub(channel)
+        return _get_return(ret=stub.LPop(GetRequest(key=key)))
 
-        return _get_return(ret=self.stub.QueryReplica(QueryReplicaRequest(key=key, operation=Operation.LPOP)))
-        """
-        To fill with your code
-        """
 
     def r_pop(self, key: int) -> Union[str, None]:
-        return _get_return(ret=self.stub.QueryReplica(QueryReplicaRequest(key=key, operation=Operation.RPOP)))
-
+        port: QueryResponse = self.stub.Query(QueryRequest(key=key))
+        channel = grpc.insecure_channel(port.server)
+        stub = KVStoreStub(channel)
+        return _get_return(ret=stub.RPop(GetRequest(key=key)))
 
     def put(self, key: int, value: str):
-        self.stub.Put(ret=self.stub.QueryReplica(QueryReplicaRequest(key=key, operation=Operation.PUT)))
-
+        port: QueryResponse = self.stub.Query(QueryRequest(key=key))
+        channel = grpc.insecure_channel(port.server)
+        stub = KVStoreStub(channel)
+        stub.Put(PutRequest(key=key, value=value))
 
     def append(self, key: int, value: str):
-        """
-        To fill with your code
-        """
+        port: QueryResponse = self.stub.Query(QueryRequest(key=key))
+        channel = grpc.insecure_channel(port.server)
+        stub = KVStoreStub(channel)
+        stub.Append(AppendRequest(key=key, value=value))
+
 
 
 class ShardReplicaClient(ShardClient):
