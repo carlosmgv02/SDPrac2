@@ -22,10 +22,6 @@ class SimpleClient:
         self.stub = KVStoreStub(self.channel)
 
     def get(self, key: int) -> Union[str, None]:
-        """
-        To fill with your code
-        """
-
         return _get_return(ret=self.stub.Get(GetRequest(key=key)))
 
     def l_pop(self, key: int) -> Union[str, None]:
@@ -65,25 +61,26 @@ class ShardClient(SimpleClient):
         """
 
     def get(self, key: int) -> Union[str, None]:
+        port: str = _get_return(ret=self.stub.Query(QueryRequest(key=key)))
+        print(port)
         """
         To fill with your code
         """
 
     def l_pop(self, key: int) -> Union[str, None]:
 
+        return _get_return(ret=self.stub.QueryReplica(QueryReplicaRequest(key=key, operation=Operation.LPOP)))
         """
         To fill with your code
         """
 
     def r_pop(self, key: int) -> Union[str, None]:
-        """
-        To fill with your code
-        """
+        return _get_return(ret=self.stub.QueryReplica(QueryReplicaRequest(key=key, operation=Operation.RPOP)))
+
 
     def put(self, key: int, value: str):
-        """
-        To fill with your code
-        """
+        self.stub.Put(ret=self.stub.QueryReplica(QueryReplicaRequest(key=key, operation=Operation.PUT)))
+
 
     def append(self, key: int, value: str):
         """
