@@ -11,18 +11,43 @@ import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 import grpc
 from multiprocessing import Manager
 
-from typing import Dict
+from typing import Dict, Tuple
 
 
 class ShardMasterService:
     def __init__(self):
         self.manager = Manager()
-        self.servers: Dict[str, int] = self.manager.dict()
+        self.keys: Dict[str, Tuple[int, int]] = self.manager.dict()
+        self.servers = self.manager.list()
+        self.total_keys = 100
 
+    def recalculate_keys(self):
+        num_servers = len(self.servers)
+        min_key = 1
+        max_key = -1
+        for i, server_name in enumerate(self.servers):
+            min_key = max_key + 1
+            max_key = min_key + (self.total_keys // num_servers) - 1
+            if i < (self.total_keys % num_servers):
+                max_key += 1
+            self.keys[server_name] = (min_key, max_key)
 
     def join(self, server: str):
-        if server not in self.servers:
-            self.servers[server] = 0
+        self.servers.append(server)
+        num_servers = len(self.servers)
+        keys_per_server = self.total_keys // num_servers
+        remaining_keys = self.total_keys % num_servers
+        start_key = 1
+        for i, server in enumerate(self.servers):
+            end_key = start_key + keys_per_server - 1
+            if remaining_keys > 0:
+                end_key += 1
+                remaining_keys -= 1
+            if i == num_servers - 1:
+                # Asegurarse de que el último servidor obtenga las claves restantes
+                end_key = self.total_keys
+            self.keys[server] = (start_key, end_key)
+            start_key = end_key + 1
 
 
     def leave(self, server: str):
