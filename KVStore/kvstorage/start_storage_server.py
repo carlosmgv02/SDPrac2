@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 HOSTNAME: str = "localhost"
 trial: float = 0.5
 
-def _run(storage_server_port: int):
 
+def _run(storage_server_port: int):
     setup_logger()
 
     address: str = "%s:%d" % (HOSTNAME, storage_server_port)

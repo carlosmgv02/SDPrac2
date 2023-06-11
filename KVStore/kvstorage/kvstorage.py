@@ -19,6 +19,7 @@ class KVStorageService:
     def __init__(self):
         self.manager = Manager()
         self.data: Dict[int, str] = self.manager.dict()
+        self.replicas: Dict[str, KVStoreStub] = self.manager.dict()
 
     def get(self, key: int) -> Optional[str]:
         return self.data.get(key)
@@ -68,12 +69,10 @@ class KVStorageService:
             self.data[key] = value
 
     def add_replica(self, server: str):
-        # Add the replica server using the appropriate logic
-        pass
+        self.replicas[server] = KVStoreStub(grpc.insecure_channel(server))
 
     def remove_replica(self, server: str):
-        # Remove the replica server using the appropriate logic
-        pass
+        del self.replicas[server]
 
 
 class KVStorageSimpleService(KVStorageService):
@@ -190,7 +189,7 @@ class KVStorageServicer(KVStoreServicer):
         return response
 
     def LPop(self, request: GetRequest, context) -> GetResponse:
-        response= GetResponse (value=self.storage_service.l_pop(request.key))
+        response = GetResponse (value=self.storage_service.l_pop(request.key))
         if response.value is None or response.value == "":
             response = GetResponse(value=None)
         else:
@@ -230,11 +229,15 @@ class KVStorageServicer(KVStoreServicer):
         return google_dot_protobuf_dot_empty__pb2.Empty()
 
     def AddReplica(self, request: ServerRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
+        self.storage_service.add_replica(request.server)
+        return google_dot_protobuf_dot_empty__pb2.Empty()
         """
         To fill with your code
         """
 
     def RemoveReplica(self, request: ServerRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
+        self.storage_service.remove_replica(request.server)
+        return google_dot_protobuf_dot_empty__pb2.Empty()
         """
         To fill with your code
         """

@@ -19,9 +19,11 @@ class ShardMasterService:
         self.manager = Manager()
         self.servers: Dict[str, int] = self.manager.dict()
 
+
     def join(self, server: str):
         if server not in self.servers:
             self.servers[server] = 0
+
 
     def leave(self, server: str):
         if server in self.servers:
@@ -37,6 +39,7 @@ class ShardMasterService:
         return servers[shard]
 
     def join_replica(self, server: str) -> Role:
+
         pass
 
     def query_replica(self, key: int, op: Operation) -> str:
@@ -50,11 +53,11 @@ class ShardMasterSimpleService(ShardMasterService):
 
     def join(self, server: str):
         super().join(server)
-        #self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
+        # self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
 
     def leave(self, server: str):
         super().leave(server)
-        #self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
+        # self.storage_service.Redistribute(server, KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD)
 
     def query(self, key: int) -> str:
         return super().query(key)
@@ -110,7 +113,5 @@ class ShardMasterServicer(ShardMasterServicer):
     def JoinReplica(self, request: JoinRequest, context) -> JoinReplicaResponse:
         return JoinReplicaResponse(role=self.shard_master_service.join_replica(request.server))
 
-
     def QueryReplica(self, request: QueryReplicaRequest, context) -> QueryResponse:
         return QueryResponse(server=self.shard_master_service.query_replica(request.key, request.operation))
-
