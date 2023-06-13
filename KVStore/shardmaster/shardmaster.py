@@ -1,4 +1,6 @@
 import logging
+import threading
+
 from KVStore.tests.utils import KEYS_LOWER_THRESHOLD, KEYS_UPPER_THRESHOLD
 from KVStore.protos.kv_store_pb2 import RedistributeRequest, ServerRequest
 from KVStore.protos.kv_store_pb2_grpc import KVStoreStub
@@ -17,54 +19,107 @@ from typing import Dict, Tuple
 class ShardMasterService:
     def __init__(self):
         self.manager = Manager()
-        self.keys: Dict[str, Tuple[int, int]] = self.manager.dict()
-        self.servers = self.manager.list()
-        self.total_keys = 100
+        self.node_dict = self.manager.dict()
 
-    def recalculate_keys(self):
-        num_servers = len(self.servers)
-        min_key = 1
-        max_key = -1
-        for i, server_name in enumerate(self.servers):
-            min_key = max_key + 1
-            max_key = min_key + (self.total_keys // num_servers) - 1
-            if i < (self.total_keys % num_servers):
-                max_key += 1
-            self.keys[server_name] = (min_key, max_key)
+    def join(self, server):
+        if len(self.node_dict) >= 100:
+            print("No se pueden agregar más nodos. El límite de claves se ha alcanzado.")
+            return
 
-    def join(self, server: str):
-        self.servers.append(server)
-        num_servers = len(self.servers)
-        keys_per_server = self.total_keys // num_servers
-        remaining_keys = self.total_keys % num_servers
-        start_key = 1
-        for i, server in enumerate(self.servers):
-            end_key = start_key + keys_per_server - 1
-            if remaining_keys > 0:
-                end_key += 1
-                remaining_keys -= 1
-            if i == num_servers - 1:
-                # Asegurarse de que el último servidor obtenga las claves restantes
-                end_key = self.total_keys
-            self.keys[server] = (start_key, end_key)
-            start_key = end_key + 1
+        min_key = 0
+        max_key = 0
 
+        if len(self.node_dict) > 0:
+            total_nodes = len(self.node_dict) + 1
+            avg_keys_per_node = 100 // total_nodes
+
+            # Calcular el rango de claves para el nuevo nodo
+            min_key = 100 // total_nodes * len(self.node_dict) + 1
+            max_key = min_key + avg_keys_per_node - 1
+
+        # Asignar el rango de claves al nuevo nodo
+        new_node = (min_key, max_key, server)
+        self.node_dict[server] = new_node
+        print(f"Total nodes: {len(self.node_dict)}")
+        print(f"Joined node: {new_node}")
+
+        # Redistribuir las claves existentes al nuevo nodo
+        self.redistribute_keys()
 
     def leave(self, server: str):
-        if server in self.servers:
-            del self.servers[server]
+        if server in self.node_dict:
+            del self.node_dict[server]
+            print(f"Left node: {server}")
+
+            self.redistribute_keys()
 
     def query(self, key: int) -> str:
-        num_servers = len(self.servers)
-        if num_servers == 0:
-            return ''
+        for node in self.node_dict.values():
+            if node[0] <= key <= node[1]:
+                return node[2]
 
-        shard = key % num_servers
-        servers = list(self.servers.keys())
-        return servers[shard]
+        return "Key not found"
+
+    def redistribute_keys(self):
+        if len(self.node_dict) == 0:
+            return
+
+        total_keys = 100
+        total_nodes = len(self.node_dict)
+        avg_keys_per_node = total_keys // total_nodes
+
+        # Verificar si hay nodos con claves por debajo del promedio
+        for node in self.node_dict.items():
+            keys_count = node[1][1] - node[1][0] + 1
+            if keys_count < avg_keys_per_node:
+                # Encontrar nodos con exceso de claves para realizar transferencias
+                nodes_to_transfer = []
+                for other_node in self.node_dict.items():
+                    if other_node[1][1] - other_node[1][0] + 1 > avg_keys_per_node:
+                        nodes_to_transfer.append(other_node)
+
+                # Ordenar los nodos con exceso de claves de mayor a menor
+                nodes_to_transfer.sort(key=lambda x: x[1][1] - x[1][0], reverse=True)
+
+                # Calcular cuántas claves transferir
+                keys_to_transfer = avg_keys_per_node - keys_count
+
+                # Transferir las claves
+                for transfer_node in nodes_to_transfer:
+                    transfer_count = min(keys_to_transfer, transfer_node[1][1] - transfer_node[1][0] + 1)
+                    new_node = (node[1][0], node[1][1] + transfer_count, node[1][2])
+                    self.node_dict[node[0]] = new_node
+
+                    transfer_node_range = (transfer_node[1][0] + transfer_count, transfer_node[1][1])
+                    new_transfer_node = (transfer_node_range[0], transfer_node_range[1], transfer_node[1][2])
+                    self.node_dict[transfer_node[0]] = new_transfer_node
+                    print(f"Source node keys: {node[1]}, Destination node keys: {new_node}")
+                    print(f"Transferred {transfer_count} keys from {transfer_node[1][2]} to {node[1][2]}")
+
+                    # Llamada gRPC para redistribuir las claves
+                    self.grpc_redistribute(transfer_node[1][2], node[1][2], transfer_node_range)
+
+                    keys_to_transfer -= transfer_count
+
+                    if keys_to_transfer == 0:
+                        break
+
+    def grpc_redistribute(self, source_server: str, destination_server: str, keys: list):
+        # Crear la instancia de la clase RedistributeRequest con los valores adecuados
+        redistribute_request = RedistributeRequest()
+        redistribute_request.destination_server = destination_server
+        redistribute_request.lower_val = min(keys)
+        redistribute_request.upper_val = max(keys)
+
+        # Realizar la llamada gRPC a la función redistribute en el nodo fuente
+        with grpc.insecure_channel(source_server) as channel:
+            stub = KVStoreStub(channel)
+            response = stub.Redistribute(redistribute_request)
+
+        print(f"Redistributed keys: {keys}"
+              f" from {source_server} to {destination_server}")
 
     def join_replica(self, server: str) -> Role:
-
         pass
 
     def query_replica(self, key: int, op: Operation) -> str:

@@ -22,6 +22,7 @@ class KVStorageService:
         self.replicas: Dict[str, KVStoreStub] = self.manager.dict()
 
     def get(self, key: int) -> Optional[str]:
+        print(f"GET: {key} -> {self.data.get(key)}")
         return self.data.get(key)
 
     def l_pop(self, key: int) -> Optional[str]:
@@ -46,23 +47,24 @@ class KVStorageService:
 
     def put(self, key: int, value: str):
         self.data[key] = value
+        print(f"PUT: {key} -> {value}")
 
     def append(self, key: int, value: str):
         if key not in self.data:
             self.data[key] = value
+            print(f"APPEND: {key} -> {value}")
         else:
             self.data[key] = self.data[key] + value
+            print(f"APPEND: {key} -> {self.data[key]} -> {value}")
 
     def redistribute(self, destination_server: str, lower_val: int, upper_val: int):
-        keys_to_transfer = []
+        keys_values = dict()
         for key in self.data.keys():
             if lower_val <= key <= upper_val:
-                keys_to_transfer.append(key)
-
-        for key in keys_to_transfer:
-            value = self.data[key]
-            del self.data[key]
-            # Transfer the key-value pair to the destination server using the appropriate logic
+                keys_values[key] = self.data[key]
+                del self.data[key]
+        stub = KVStoreStub(grpc.insecure_channel(destination_server))
+        stub.Transfer(TransferRequest(keys_values=keys_values))
 
     def transfer(self, keys_values: list):
         for key, value in keys_values:
@@ -221,11 +223,11 @@ class KVStorageServicer(KVStoreServicer):
         """
 
     def Redistribute(self, request: RedistributeRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        self.storage_service.redistribute(request.key, request.value)
+        self.storage_service.redistribute(request.destination_server, request.lower_val, request.upper_val)
         return google_dot_protobuf_dot_empty__pb2.Empty()
 
     def Transfer(self, request: TransferRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        self.storage_service.transfer(request.key, request.value)
+        self.storage_service.transfer(request.keys_values)
         return google_dot_protobuf_dot_empty__pb2.Empty()
 
     def AddReplica(self, request: ServerRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
