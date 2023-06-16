@@ -8,6 +8,7 @@ from KVStore.protos.kv_store_pb2_grpc import KVStoreServicer, KVStoreStub
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 from KVStore.protos.kv_store_shardmaster_pb2 import Role
 from multiprocessing import Manager
+
 EVENTUAL_CONSISTENCY_INTERVAL: int = 2
 
 logger = logging.getLogger("KVStore")
@@ -58,17 +59,15 @@ class KVStorageService:
             print(f"APPEND: {key} -> {self.data[key]} -> {value}")
 
     def redistribute(self, destination_server: str, lower_val: int, upper_val: int):
-        keys_values = dict()
-        for key in self.data.keys():
-            if lower_val <= key <= upper_val:
-                keys_values[key] = self.data[key]
-                del self.data[key]
-        stub = KVStoreStub(grpc.insecure_channel(destination_server))
-        stub.Transfer(TransferRequest(keys_values=keys_values))
+        keys_values = [KeyValue(key=key, value=self.data[key]) for key in self.data.keys() if lower_val <= key <= upper_val]
+        self.data = {key: value for key, value in self.data.items() if key not in keys_values}
 
-    def transfer(self, keys_values: list):
-        for key, value in keys_values:
-            self.data[key] = value
+        if keys_values:
+            stub = KVStoreStub(grpc.insecure_channel(destination_server))
+            stub.Transfer(TransferRequest(keys_values=keys_values))
+
+    def transfer(self, keys_values: List[KeyValue]):
+        self.data.update({element.key: element.value for element in keys_values})
 
     def add_replica(self, server: str):
         self.replicas[server] = KVStoreStub(grpc.insecure_channel(server))
@@ -87,46 +86,24 @@ class KVStorageSimpleService(KVStorageService):
 
     def get(self, key: int) -> Union[str, None]:
         return self.storage_service.get(key)
-        """
-        To fill with your code
-        """
 
     def l_pop(self, key: int) -> Union[str, None]:
         return self.storage_service.l_pop(key)
-        """
-        To fill with your code
-        """
 
     def r_pop(self, key: int) -> Union[str, None]:
         return self.storage_service.r_pop(key)
-        """
-        To fill with your code
-        """
 
     def put(self, key: int, value: str):
         return self.storage_service.put(key, value)
-        """
-        To fill with your code
-        """
 
     def append(self, key: int, value: str):
         return self.storage_service.append(key, value)
-        """
-        To fill with your code
-        """
 
     def redistribute(self, destination_server: str, lower_val: int, upper_val: int):
         return self.storage_service.redistribute(destination_server, lower_val, upper_val)
-        """
-        To fill with your code
-        """
 
     def transfer(self, keys_values: List[KeyValue]):
         return self.storage_service.transfer(keys_values)
-        """
-        To fill with your code
-        """
-
 
 class KVStorageReplicasService(KVStorageSimpleService):
     role: Role
@@ -191,7 +168,7 @@ class KVStorageServicer(KVStoreServicer):
         return response
 
     def LPop(self, request: GetRequest, context) -> GetResponse:
-        response = GetResponse (value=self.storage_service.l_pop(request.key))
+        response = GetResponse(value=self.storage_service.l_pop(request.key))
         if response.value is None or response.value == "":
             response = GetResponse(value=None)
         else:
@@ -200,7 +177,7 @@ class KVStorageServicer(KVStoreServicer):
         return response
 
     def RPop(self, request: GetRequest, context) -> GetResponse:
-        response =  GetResponse(value=self.storage_service.r_pop(request.key))
+        response = GetResponse(value=self.storage_service.r_pop(request.key))
         if response.value is None or response.value == "":
             response = GetResponse(value=None)
         else:
@@ -213,7 +190,6 @@ class KVStorageServicer(KVStoreServicer):
     def Put(self, request: PutRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
         self.storage_service.put(request.key, request.value)
         return google_dot_protobuf_dot_empty__pb2.Empty()
-
 
     def Append(self, request: AppendRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
         self.storage_service.append(request.key, request.value)
@@ -233,13 +209,7 @@ class KVStorageServicer(KVStoreServicer):
     def AddReplica(self, request: ServerRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
         self.storage_service.add_replica(request.server)
         return google_dot_protobuf_dot_empty__pb2.Empty()
-        """
-        To fill with your code
-        """
 
     def RemoveReplica(self, request: ServerRequest, context) -> google_dot_protobuf_dot_empty__pb2.Empty:
         self.storage_service.remove_replica(request.server)
         return google_dot_protobuf_dot_empty__pb2.Empty()
-        """
-        To fill with your code
-        """
