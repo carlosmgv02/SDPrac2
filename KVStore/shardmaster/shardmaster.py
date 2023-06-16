@@ -79,16 +79,17 @@ class ShardMasterService:
             lower_val = upper_val + 1
 
     def query(self, key):
-        self.lock.acquire()
+        # self.lock.acquire()
         for address in self.servers:
             print(f"Key: {str(key)} Range: {str(self.node_dict.get(address))} Server: {address}")
             if self.node_dict.get(address)[0] <= key <= self.node_dict.get(address)[1]:
                 return address
-        self.lock.release()
+        # self.lock.release()
         return None
 
     def redistribute_keys(self, server):
-        with self.lock:
+        #with self.lock:
+        if server in self.servers:
             server_index = self.servers.index(server)
             prev_server = self.servers[server_index - 1] if server_index > 0 else None
             next_server = self.servers[server_index + 1] if server_index < len(self.servers) - 1 else None
@@ -108,6 +109,8 @@ class ShardMasterService:
                     keys = (0, shard[0])
                     print(f"Redistributing keys: {keys} from {next_server} to {destination}")
                     grpc_redistribute(next_server, destination, keys)
+        else:
+            print(f"Server {server} not in servers list")
 
     def join_replica(self, server: str) -> Role:
         pass

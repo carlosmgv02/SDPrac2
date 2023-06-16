@@ -26,11 +26,23 @@ class ShardKVParallelTests(Test):
 
         client = ShardClient(self.master_address)
         time.sleep(1)
-        """
+        print("PARALEL PUT TESTS")
         assert (test_put(client, client_id * 20, DATA[client_id]))
+        print("END PARALEL PUT TESTS")
+
+        print("PARALEL GET TESTS")
         assert (test_get(client, client_id * 20, DATA[client_id]))
+        print("END PARALEL GET TESTS")
+
+        print("PARALEL APPEND TESTS")
         assert (test_append(client, client_id * 20, DATA[client_id]))
+        print("END PARALEL APPEND TESTS")
+
+        print("PARALEL GET2 TESTS")
         assert (test_get(client, client_id * 20, DATA[client_id] + DATA[client_id]))
+        print("END PARALEL GET2 TESTS")
+
         assert (test_put(client, client_id * 20, ""))
+
         client.stop()
-        """
+
