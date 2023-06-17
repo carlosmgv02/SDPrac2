@@ -20,7 +20,6 @@ class ShardKVSimpleTests(Test):
 
         assert (test_append(client, 45, "huh?"))
         assert (test_get(client, 45, "huh?"))
-        print("test_get passed")
         assert (test_put(client, 45, "huh!"))
         assert (test_get(client, 45, "huh!"))
         assert (test_append(client, 45, "?"))

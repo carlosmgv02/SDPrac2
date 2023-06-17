@@ -138,9 +138,7 @@ class ShardMasterReplicasService(ShardMasterSimpleService):
     def __init__(self, number_of_shards: int):
         super().__init__()
         self.storage_service = ShardMasterSimpleService()
-        """
-        To fill with your code
-        """
+
 
     def leave(self, server: str):
         super().leave(server)

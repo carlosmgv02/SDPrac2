@@ -15,8 +15,8 @@
 6. [Conclusion](#conclusion)
 7. [References](#references)
 8. [Installation](#installation) 
-8. [Evaluation](#evaluation) 
-9. [Authors](#authors)
+9. [Evaluation](#evaluation) 
+10. [Authors](#authors)
 
 ## Introduction <a name="introduction"></a>
 The Sharded Storage System is a scalable and fault-tolerant solution designed to store and access large volumes of data efficiently. It utilizes sharding techniques to partition data into smaller subsets called shards, which can be distributed across multiple servers. The system aims to achieve high performance, horizontal scalability, and fault tolerance.
@@ -165,6 +165,7 @@ python3 eval/sharded.py
 python3 eval/replicas.py
 ```
 
+***
 
 ## Authors
 * Carlos Martínez: [carlosmgv02](https://github.com/carlosmgv02)
