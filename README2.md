@@ -30,16 +30,12 @@ The key features and goals of the Sharded Storage System are as follows:
 ## System Implementation <a name="system-implementation"></a>
 
 ### Vertical and Horizontal Scalability <a name="vertical-and-horizontal-scalability"></a>
-The Sharded Storage System is designed to be both vertically and horizontally scalable.
+The Sharded Storage System is designed to horizontally scalable.
 
-- **Vertical Scalability**: To achieve vertical scalability, the system employs various techniques such as data compression, indexing, and query optimization. These techniques optimize resource utilization and improve performance by efficiently utilizing the available server resources. As data volume or request loads increase, additional resources can be allocated to individual servers to handle the increased workload.
-
-- **Horizontal Scalability**: The system achieves horizontal scalability by distributing data across multiple servers. It utilizes a consistent hashing algorithm to determine shard placement. Each shard is assigned a unique identifier, and servers are responsible for specific ranges of shard identifiers. By adding more servers to the system, the data and request loads can be distributed across multiple machines, ensuring scalability.
+- **Horizontal Scalability**: The system achieves horizontal scalability by distributing data across multiple servers. It makes use of a hashing algorithm to determine shard placement. Each server has a key range, which is stored using a tuple to indicate min and max value saved. By adding more servers to the system, the data and request loads can be distributed across multiple machines, ensuring scalability.
 
 ### Sharding Technique <a name="sharding-technique"></a>
 Sharding is a technique used to partition data into smaller subsets called shards. Each shard contains a subset of the data, and multiple shards collectively hold the entire dataset.
-
-- **Data Partitioning**: The system employs a consistent hashing algorithm to determine shard placement. The data is partitioned based on a shard key, which is typically a unique identifier or a hash value derived from the data. The consistent hashing algorithm ensures that each shard is responsible for a specific range of shard keys, distributing the data evenly across shards.
 
 - **Query Routing**: When a client sends a query, the system uses the shard key to determine the target shard(s) for the query. By knowing which shard holds the relevant data, the query is routed directly to the appropriate shard(s), minimizing the need for scanning the entire dataset.
 
