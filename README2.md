@@ -111,7 +111,6 @@ Apache Cassandra is a distributed and highly scalable NoSQL database that utiliz
 |    +-----------+-------------+
 |                 |
 +-----------------+
-
 ```
 
 In Cassandra, data is distributed across multiple nodes in a ring-based architecture. Each node in the cluster is responsible for a portion of the data based on a partition key. The system uses a gossip protocol for failure detection and membership management. The replicas are distributed across multiple nodes using a replication strategy, such as SimpleStrategy or NetworkTopologyStrategy, to ensure fault tolerance and data redundancy.
