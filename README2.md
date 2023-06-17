@@ -38,6 +38,47 @@ The Sharded Storage System is designed to horizontally scalable.
 Sharding is a technique used to partition data into smaller subsets called shards. Each shard contains a subset of the data, and multiple shards collectively hold the entire dataset.
 
 - **Query Routing**: When a client sends a query, the system uses the shard key to determine the target shard(s) for the query. By knowing which shard holds the relevant data, the query is routed directly to the appropriate shard(s), minimizing the need for scanning the entire dataset.
+```
++---------------------+
+|      Query          |
+|                     |
+|    +------------+   |
+|    |  Sharding  |   |
+|    |  Technique |   |
+|    +------------+   |
+|                     |
+|     Query Routing   |
+|       +-----+       |
+|       |     |       |
+|       |Shard|       |
+|       |  1  |       |
+|       +-----+       |
+|                     |
+|       +-----+       |
+|       |     |       |
+|       |Shard|       |
+|       |  2  |       |
+|       +-----+       |
+|                     |
+|       +-----+       |
+|       |     |       |
+|       |Shard|       |
+|       |  3  |       |
+|       +-----+       |
+|                     |
+|       +-----+       |
+|       |     |       |
+|       |Shard|       |
+|       |  4  |       |
+|       +-----+       |
++---------------------+
+
+
+```
+
+
+
+
 
 ### Fault Tolerance <a name="fault-tolerance"></a>
 The Sharded Storage System incorporates fault tolerance mechanisms to ensure high availability and data consistency.
@@ -46,7 +87,7 @@ The Sharded Storage System incorporates fault tolerance mechanisms to ensure hig
 
 - **Automatic Failure Detection**: To detect server failures, the system uses heartbeat messages or monitoring processes. Each server periodically sends heartbeat messages to its replicas or a monitoring process. If a heartbeat is not received within a certain time period, the server is considered failed, and appropriate actions are taken.
 
-- **Master Election**: In the event of a replica master failure, the remaining replicas participate in an election process to select a new replica master. Various algorithms can be used, such as the Raft algorithm or the Paxos algorithm, to achieve consensus among the replicas and elect a new master. The elected replica takes over the responsibilities of the failed master.
+- **Master Election**: In the event of a replica master failure, the remaining replicas participate in an election process to select a new replica master. Various algorithms can be used, such as the Raft algorithm (simplifies leader election, log replication, and membership changes) or the Paxos algorithm (uses a two-phase voting process to reach agreement on a single value among a group of nodes) , to achieve consensus among the replicas and elect a new master. The elected replica takes over the responsibilities of the failed master.
 
 ## Real Examples of Sharded Storage Systems <a name="real-examples-of-sharded-storage-systems"></a>
 
@@ -75,7 +116,7 @@ MongoDB is a popular document-oriented database that utilizes sharding for scala
 |                 |         +---------------------+
 +-----------------+
 ```
-In MongoDB, sharding is achieved by dividing data into chunks based on a shard key. Each shard is a separate MongoDB replica set that contains a subset of the data. The system uses a configuration server to track metadata about the sharded data, including chunk ranges and shard mappings. The query router, known as the `mongos` process, receives queries from clients and routes them to the appropriate shards based on the shard key.
+In MongoDB, sharding is achieved by dividing data into chunks based on a shard key. Each shard is a separate MongoDB replica set that contains a subset of the data. The system uses a configuration server to track metadata about the sharded data, including chunk ranges and shard mappings. The query router, known as the `mongos` process, receives queries from clients and routes them to the appropriate shards based on the shard key.  Overall, MongoDB's sharding architecture prioritizes Availability and Partition tolerance while providing eventual consistency, making it an AP system according to the CAP theorem.
 
 ### Example 2: Apache Cassandra <a name="example-2-apache-cassandra"></a>
 Apache Cassandra is a distributed and highly scalable NoSQL database that utilizes a decentralized peer-to-peer architecture.
